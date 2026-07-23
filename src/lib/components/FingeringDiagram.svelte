@@ -28,7 +28,6 @@
         class="flute-body"
         d="M12 151V27Q12 17 21 11L24 5L29 8L34 5L37 11Q46 17 46 27V151Z"
       />
-      <path class="flute-highlight" d="M17 145V29Q17 20 24 15" />
       {#if fingering}
         {#each fingering.holes as hole, index}
           <circle class="hole" class:closed={hole === 'closed'} cx="29" cy={holePositions[index]} r="6.6" />
@@ -65,14 +64,6 @@
     stroke: #263c38;
     stroke-linejoin: round;
     stroke-width: 2.4;
-  }
-
-  .flute-highlight {
-    fill: none;
-    opacity: 0.32;
-    stroke: #fff2d1;
-    stroke-linecap: round;
-    stroke-width: 2;
   }
 
   .hole {

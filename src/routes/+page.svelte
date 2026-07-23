@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import { replaceState } from '$app/navigation';
   import { fluteSynth } from '$lib/audio/fluteSynth';
+  import CombinedNotation from '$lib/components/CombinedNotation.svelte';
   import FingeringDiagram from '$lib/components/FingeringDiagram.svelte';
-  import StaffNotation from '$lib/components/StaffNotation.svelte';
   import { NOTE_OPTIONS, REGISTER_OPTIONS, SCALE_DEFINITIONS } from '$lib/music/data';
   import {
     DEFAULT_STATE,
@@ -268,8 +268,11 @@
       </div>
 
       <div class="staffs">
-        <StaffNotation {notes} mode="nakai" {activeIndex} />
-        <StaffNotation {notes} mode="concert" {activeIndex} />
+        <CombinedNotation
+          {notes}
+          {activeIndex}
+          orientation={settings.orientation}
+        />
       </div>
 
       <div class="bridge-note">
