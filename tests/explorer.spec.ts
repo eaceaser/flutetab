@@ -57,6 +57,9 @@ test('long scales wrap into systems without staff scrollbars', async ({ page }) 
     .poll(() => notationSheet.locator('.notation-system').count())
     .toBeGreaterThanOrEqual(4);
   await expect(notationSheet.getByRole('img')).toHaveCount(13);
+  await expect(notationSheet.getByRole('heading', { name: 'Concert pitch' })).toHaveCount(1);
+  await expect(notationSheet.getByRole('heading', { name: 'Nakai notation' })).toHaveCount(1);
+  await expect(notationSheet.getByRole('heading', { name: 'Fingering tablature' })).toHaveCount(1);
 
   const overflowingSystems = await page.locator('.sheet-systems').evaluateAll((elements) =>
     elements.filter((element) => element.scrollWidth > element.clientWidth + 1).length
@@ -108,4 +111,39 @@ test('desktop fingering glyphs align with their rendered Nakai noteheads', async
 
   expect(Math.max(...measurements.flatMap((measurement) => measurement.deltas))).toBeLessThanOrEqual(1);
   expect(Math.min(...measurements.map((measurement) => measurement.preambleClearance))).toBeGreaterThanOrEqual(6);
+});
+
+test('music systems use consistent left-aligned engraving spacing', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/?scale=chromatic');
+
+  const notationSheet = page.locator('.notation-sheet');
+  await expect(notationSheet.locator('.notation-system')).toHaveCount(2);
+  await expect
+    .poll(() => notationSheet.locator('.fingering-layer[data-aligned="true"]').count())
+    .toBe(2);
+
+  const layout = await notationSheet.locator('.notation-system').evaluateAll((systems) =>
+    systems.map((system) => {
+      const systemBounds = system.getBoundingClientRect();
+      const centers = [...system.querySelectorAll('.concert-layer .vf-stavenote .vf-notehead')].map(
+        (notehead) => {
+          const glyph = notehead.querySelector('text, path');
+          const bounds = glyph?.getBoundingClientRect();
+          return bounds ? bounds.left + bounds.width / 2 - systemBounds.left : 0;
+        }
+      );
+      return {
+        centers,
+        width: systemBounds.width
+      };
+    })
+  );
+
+  expect(Math.abs(layout[0].centers[0] - layout[1].centers[0])).toBeLessThanOrEqual(1);
+  for (const system of layout) {
+    const gaps = system.centers.slice(1).map((center, index) => center - system.centers[index]);
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(1);
+  }
+  expect(layout[1].centers.at(-1) ?? 0).toBeLessThan(layout[1].width * 0.5);
 });

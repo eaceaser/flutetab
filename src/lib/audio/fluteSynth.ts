@@ -55,26 +55,35 @@ class FluteSynth {
   }
 
   playSequence(notes: ScaleNote[], tempo: number, callback: NoteCallback): void {
+    this.playSequences([notes], tempo, callback);
+  }
+
+  playSequences(sequences: ScaleNote[][], tempo: number, callback: NoteCallback): void {
     this.stop();
     const context = this.ensureContext();
     const runId = ++this.runId;
     const secondsPerBeat = 60 / tempo;
     const start = context.currentTime + 0.08;
+    let beatCursor = 0;
 
-    notes.forEach((note, index) => {
-      const when = start + index * secondsPerBeat;
-      this.scheduleVoice(note.frequency, when, secondsPerBeat * 0.82);
-      this.timers.push(
-        window.setTimeout(
-          () => {
-            if (runId === this.runId) callback(note);
-          },
-          Math.max(0, (when - context.currentTime) * 1000)
-        )
-      );
+    sequences.forEach((notes, sequenceIndex) => {
+      notes.forEach((note) => {
+        const when = start + beatCursor * secondsPerBeat;
+        this.scheduleVoice(note.frequency, when, secondsPerBeat * 0.82);
+        this.timers.push(
+          window.setTimeout(
+            () => {
+              if (runId === this.runId) callback(note);
+            },
+            Math.max(0, (when - context.currentTime) * 1000)
+          )
+        );
+        beatCursor += 1;
+      });
+      if (sequenceIndex < sequences.length - 1) beatCursor += 1;
     });
 
-    const finishAt = start + notes.length * secondsPerBeat;
+    const finishAt = start + beatCursor * secondsPerBeat;
     this.timers.push(
       window.setTimeout(
         () => {

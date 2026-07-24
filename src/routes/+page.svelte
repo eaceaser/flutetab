@@ -4,9 +4,13 @@
   import { fluteSynth } from '$lib/audio/fluteSynth';
   import CombinedNotation from '$lib/components/CombinedNotation.svelte';
   import FingeringDiagram from '$lib/components/FingeringDiagram.svelte';
+  import PracticeWorksheet from '$lib/components/PracticeWorksheet.svelte';
   import { NOTE_OPTIONS, REGISTER_OPTIONS, SCALE_DEFINITIONS } from '$lib/music/data';
+  import { generatePracticeWorksheet, worksheetPlaybackNotes } from '$lib/music/practice';
   import {
     DEFAULT_STATE,
+    DEFAULT_WORKSHEET_SCALE_IDS,
+    DEFAULT_WORKSHEET_SECTIONS,
     getScaleNotes,
     midiForPitch,
     noteName,
@@ -16,7 +20,12 @@
     scaleById,
     serializeState
   } from '$lib/music/theory';
-  import type { ExplorerState, ScaleNote } from '$lib/music/types';
+  import type {
+    ExplorerState,
+    PracticeExercise,
+    PracticeSection,
+    ScaleNote
+  } from '$lib/music/types';
 
   let settings: ExplorerState = $state({ ...DEFAULT_STATE });
   let hydrated = $state(false);
@@ -26,11 +35,42 @@
 
   let selectedScale = $derived(scaleById(settings.scaleId));
   let notes = $derived(getScaleNotes(settings));
+  let exercises = $derived(generatePracticeWorksheet(settings));
   let fundamentalMidi = $derived(midiForPitch(settings.pitchClass, settings.octave));
   let fluteName = $derived(`${noteName(fundamentalMidi, false)} minor`);
   let playableCount = $derived(notes.filter((note) => note.status !== 'unavailable').length);
   let warningCount = $derived(notes.filter((note) => note.warning).length);
   let nativeRoot = $derived(settings.rootPitchClass === settings.pitchClass);
+  let activeExercise = $derived(
+    exercises.find((exercise) => exercise.notes.some((note) => note.index === activeIndex)) ?? null
+  );
+
+  const rangeLabels: Record<number, string> = {
+    12: 'Octave',
+    13: 'Octave + minor 2nd',
+    14: 'Octave + major 2nd',
+    15: 'Octave + minor 3rd',
+    16: 'Octave + major 3rd',
+    17: 'Octave + perfect 4th'
+  };
+
+  const worksheetSections: Array<{
+    id: PracticeSection;
+    label: string;
+    description: string;
+  }> = [
+    { id: 'native-modes', label: 'Mode 1, 2 & 4', description: 'Natural flute centers' },
+    { id: 'woven', label: 'Woven scale', description: 'Overlapping note cells' },
+    { id: 'thirds', label: 'Broken thirds', description: 'Classical interval bridge' },
+    { id: 'tonic-arpeggio', label: 'Tonic arpeggio', description: 'Minor triad and return' },
+    { id: 'chord-family', label: 'Mode 1 chord family', description: 'i, iv and v7' },
+    {
+      id: 'chord-progression',
+      label: 'Four-chord pattern',
+      description: 'Native-flute dexterity study'
+    },
+    { id: 'prompts', label: 'Practice prompts', description: 'Articulation and scale song' }
+  ];
 
   const groupedScales = $derived(
     [...new Set(SCALE_DEFINITIONS.map((scale) => scale.family))].map((family) => ({
@@ -40,7 +80,14 @@
   );
 
   onMount(() => {
-    settings = parseState(new URLSearchParams(window.location.search));
+    const params = new URLSearchParams(window.location.search);
+    settings = parseState(params);
+    if (!params.has('range')) {
+      const savedRange = Number(localStorage.getItem(profileKey(settings)));
+      if (Number.isInteger(savedRange) && savedRange >= 12 && savedRange <= 17) {
+        settings.maxSemitones = savedRange;
+      }
+    }
     const readyTimer = window.setTimeout(() => {
       hydrated = true;
     }, 0);
@@ -58,7 +105,35 @@
     fluteSynth.stop();
     isPlaying = false;
     activeIndex = null;
+    localStorage.setItem(profileKey(settings), String(settings.maxSemitones));
   });
+
+  function profileKey(state: Pick<ExplorerState, 'pitchClass' | 'octave'>): string {
+    return `flutetab-range-${state.pitchClass}-${state.octave}`;
+  }
+
+  function defaultRange(pitchClass: number, octave: number): number {
+    return pitchClass === 9 && octave === 4 ? 15 : 12;
+  }
+
+  function rangeForProfile(pitchClass: number, octave: number): number {
+    const saved = Number(localStorage.getItem(profileKey({ pitchClass, octave })));
+    return Number.isInteger(saved) && saved >= 12 && saved <= 17
+      ? saved
+      : defaultRange(pitchClass, octave);
+  }
+
+  function changeFundamental(event: Event) {
+    const pitchClass = Number((event.currentTarget as HTMLSelectElement).value);
+    settings.pitchClass = pitchClass;
+    settings.maxSemitones = rangeForProfile(pitchClass, settings.octave);
+  }
+
+  function changeRegister(event: Event) {
+    const octave = Number((event.currentTarget as HTMLSelectElement).value);
+    settings.octave = octave;
+    settings.maxSemitones = rangeForProfile(settings.pitchClass, octave);
+  }
 
   function preview(note: ScaleNote) {
     if (note.status === 'unavailable') return;
@@ -71,6 +146,16 @@
   }
 
   function startPlayback() {
+    if (settings.view === 'practice') {
+      const sequences = worksheetPlaybackNotes(exercises);
+      if (sequences.length === 0) return;
+      isPlaying = true;
+      fluteSynth.playSequences(sequences, settings.tempo, (note) => {
+        activeIndex = note?.index ?? null;
+        if (!note) isPlaying = false;
+      });
+      return;
+    }
     const sequence = playbackOrder(
       notes.filter((note) => note.status !== 'unavailable'),
       settings.direction
@@ -108,13 +193,30 @@
     settings.rootPitchClass = settings.pitchClass;
     settings.scaleId = 'minor-pentatonic';
   }
+
+  function playExercise(exercise: PracticeExercise) {
+    stopPlayback();
+    const sequence = exercise.notes.filter((note) => note.status !== 'unavailable');
+    if (!sequence.length) return;
+    isPlaying = true;
+    fluteSynth.playSequence(sequence, settings.tempo, (note) => {
+      activeIndex = note?.index ?? null;
+      if (!note) isPlaying = false;
+    });
+  }
+
+  function resetWorksheet() {
+    settings.worksheetScaleIds = [...DEFAULT_WORKSHEET_SCALE_IDS];
+    settings.worksheetSections = [...DEFAULT_WORKSHEET_SECTIONS];
+    settings.scaleId = 'minor-pentatonic';
+  }
 </script>
 
 <svelte:head>
-  <title>FluteTab — Nakai scale explorer</title>
+  <title>FluteTab — Nakai scale explorer & practice worksheets</title>
   <meta
     name="description"
-    content="Explore Native American-style flute scales through Nakai notation, concert pitch, fingerings, and audio."
+    content="Explore Native American-style flute scales and generate range-aware practice worksheets with Nakai notation, concert pitch, fingerings, and audio."
   />
 </svelte:head>
 
@@ -137,21 +239,37 @@
 <main>
   <section class="hero">
     <div>
-      <p class="kicker">Nakai scale explorer</p>
-      <h1>See the music you already know.</h1>
+      <p class="kicker">{settings.view === 'practice' ? 'Range-aware practice studio' : 'Nakai scale explorer'}</p>
+      <h1>{settings.view === 'practice' ? 'Build a practice page for this flute.' : 'See the music you already know.'}</h1>
       <p class="hero-copy">
-        Connect fingering, interval, Nakai tablature, and concert pitch—then hear the scale on your
-        flute.
+        {settings.view === 'practice'
+          ? 'Connect Native-flute patterns with the scale and arpeggio practice you know from classical training.'
+          : 'Connect fingering, interval, Nakai tablature, and concert pitch—then hear the scale on your flute.'}
       </p>
-    </div>
-    <div class="hero-mark" aria-hidden="true">
-      <span>F♯</span>
-      <small>always written</small>
     </div>
   </section>
 
+  <nav class="view-switcher" aria-label="App view">
+    <button
+      class:active={settings.view === 'explore'}
+      aria-pressed={settings.view === 'explore'}
+      onclick={() => (settings.view = 'explore')}
+    >
+      <span>Explore</span>
+      <small>One scale in depth</small>
+    </button>
+    <button
+      class:active={settings.view === 'practice'}
+      aria-pressed={settings.view === 'practice'}
+      onclick={() => (settings.view = 'practice')}
+    >
+      <span>Practice worksheet</span>
+      <small>Scales, patterns & arpeggios</small>
+    </button>
+  </nav>
+
   <div class="workspace">
-    <aside class="control-panel" aria-label="Scale configuration">
+    <aside class="control-panel" aria-label={settings.view === 'practice' ? 'Worksheet configuration' : 'Scale configuration'}>
       <div class="panel-heading">
         <div>
           <span class="step">01</span>
@@ -163,7 +281,7 @@
       <div class="control-grid flute-controls">
         <label>
           <span>Fundamental</span>
-          <select bind:value={settings.pitchClass} aria-label="Fundamental">
+          <select value={settings.pitchClass} onchange={changeFundamental} aria-label="Fundamental">
             {#each NOTE_OPTIONS as option}
               <option value={option.pitchClass}>{option.label}</option>
             {/each}
@@ -171,7 +289,7 @@
         </label>
         <label>
           <span>Register</span>
-          <select bind:value={settings.octave} aria-label="Register">
+          <select value={settings.octave} onchange={changeRegister} aria-label="Register">
             {#each REGISTER_OPTIONS as option}
               <option value={option.octave}>{option.label} · octave {option.octave}</option>
             {/each}
@@ -179,15 +297,33 @@
         </label>
       </div>
 
+      <div class="control-stack">
+        <label>
+          <span>Highest stable note</span>
+          <select bind:value={settings.maxSemitones} aria-label="Highest stable note">
+            {#each [12, 13, 14, 15, 16, 17] as semitones}
+              <option value={semitones}>
+                {noteName(fundamentalMidi + semitones, false)} · {rangeLabels[semitones]}
+              </option>
+            {/each}
+          </select>
+        </label>
+        <p class="control-help">
+          Notes through {noteName(fundamentalMidi + settings.maxSemitones, false)} may be used.
+          Half-hole and upper-register fingerings remain marked.
+        </p>
+      </div>
+
       <div class="divider"></div>
 
       <div class="panel-heading">
         <div>
           <span class="step">02</span>
-          <h2>Choose a scale</h2>
+          <h2>{settings.view === 'practice' ? 'Build worksheet' : 'Choose a scale'}</h2>
         </div>
       </div>
 
+      {#if settings.view === 'explore'}
       <div class="control-stack">
         <label>
           <span>Scale type</span>
@@ -248,8 +384,109 @@
           </label>
         </div>
       </details>
+      {:else}
+        <div class="control-stack">
+          <label>
+            <span>Practice key</span>
+            <select bind:value={settings.rootPitchClass} aria-label="Practice key">
+              {#each NOTE_OPTIONS as option}
+                <option value={option.pitchClass}>{option.label}</option>
+              {/each}
+            </select>
+          </label>
+          <label>
+            <span>Focus scale for patterns</span>
+            <select bind:value={settings.scaleId} aria-label="Focus scale">
+              {#each groupedScales as group}
+                <optgroup label={group.family}>
+                  {#each group.scales as scale}
+                    <option value={scale.id}>{scale.name}</option>
+                  {/each}
+                </optgroup>
+              {/each}
+            </select>
+          </label>
+        </div>
+
+        <fieldset class="worksheet-options">
+          <legend>Parallel scale pages</legend>
+          {#each [
+            ['minor-pentatonic', 'Minor pentatonic'],
+            ['dorian', 'Dorian / Nakai'],
+            ['aeolian', 'Natural minor'],
+            ['minor-blues', 'Minor blues'],
+            ['harmonic-minor', 'Harmonic minor'],
+            ['melodic-minor', 'Melodic minor']
+          ] as scaleOption}
+            <label class="check-row">
+              <input
+                type="checkbox"
+                value={scaleOption[0]}
+                bind:group={settings.worksheetScaleIds}
+              />
+              <span>{scaleOption[1]}</span>
+            </label>
+          {/each}
+        </fieldset>
+
+        <fieldset class="worksheet-options">
+          <legend>Exercise blocks</legend>
+          {#each worksheetSections as section}
+            <label class="check-row">
+              <input type="checkbox" value={section.id} bind:group={settings.worksheetSections} />
+              <span>
+                <strong>{section.label}</strong>
+                <small>{section.description}</small>
+              </span>
+            </label>
+          {/each}
+        </fieldset>
+
+        <button class="preset-button" onclick={resetWorksheet}>Restore Daily Practice preset</button>
+
+        <div class="scale-summary worksheet-summary">
+          <span>Physical range</span>
+          <strong>{noteName(fundamentalMidi, false)}–{noteName(fundamentalMidi + settings.maxSemitones, false)}</strong>
+          <p>
+            {exercises.length} exercises in {pitchClassLabel(settings.rootPitchClass)}.
+            Range-limited pages are labeled instead of silently changing their notes.
+          </p>
+        </div>
+
+        <details class="advanced-controls">
+          <summary>Display preferences</summary>
+          <div class="control-stack details-body">
+            <label>
+              <span>Accidental spelling</span>
+              <select bind:value={settings.accidentalPreference} aria-label="Accidental spelling">
+                <option value="context">Follow scale context</option>
+                <option value="sharps">Prefer sharps</option>
+                <option value="flats">Prefer flats</option>
+              </select>
+            </label>
+            <label>
+              <span>Fingering orientation</span>
+              <select bind:value={settings.orientation} aria-label="Fingering orientation">
+                <option value="mouth-up">Mouth end up</option>
+                <option value="mouth-down">Mouth end down</option>
+              </select>
+            </label>
+          </div>
+        </details>
+      {/if}
     </aside>
 
+    {#if settings.view === 'practice'}
+      <section class="explorer" aria-label="Generated practice worksheet">
+        <PracticeWorksheet
+          {exercises}
+          {activeIndex}
+          orientation={settings.orientation}
+          showPrompts={settings.worksheetSections.includes('prompts')}
+          onPlayExercise={playExercise}
+        />
+      </section>
+    {:else}
     <section class="explorer" aria-label="Generated scale">
       <div class="explorer-heading">
         <div>
@@ -306,7 +543,7 @@
             aria-label={`${note.concertName}, ${note.intervalName}${note.warning ? `, ${note.warning}` : ''}`}
           >
             <div class="card-top">
-              <span class="degree">Degree {note.degree}</span>
+              <span class="degree">Degree {note.degreeLabel}</span>
               {#if note.warning}<span class="status-icon" aria-hidden="true">!</span>{/if}
             </div>
             <FingeringDiagram fingering={note.fingering} orientation={settings.orientation} />
@@ -361,6 +598,7 @@
         </details>
       </section>
     </section>
+    {/if}
   </div>
 </main>
 
@@ -370,12 +608,18 @@
       <span class="sound-bars" class:playing={isPlaying} aria-hidden="true"><i></i><i></i><i></i></span>
       <div>
         <small>{isPlaying ? 'Now playing' : 'Practice player'}</small>
-        <strong>{activeIndex === null ? `${pitchClassLabel(settings.rootPitchClass)} ${selectedScale.shortName}` : notes[activeIndex]?.concertName}</strong>
+        <strong>
+          {#if settings.view === 'practice'}
+            {activeExercise?.title ?? `${pitchClassLabel(settings.rootPitchClass)} worksheet`}
+          {:else}
+            {activeIndex === null ? `${pitchClassLabel(settings.rootPitchClass)} ${selectedScale.shortName}` : notes[activeIndex]?.concertName}
+          {/if}
+        </strong>
       </div>
     </div>
 
     <div class="transport">
-      <button class="icon-button" onclick={restartPlayback} aria-label="Restart scale">
+      <button class="icon-button" onclick={restartPlayback} aria-label={settings.view === 'practice' ? 'Restart worksheet' : 'Restart scale'}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v6h6M5.5 16A8 8 0 1 0 6 7" /></svg>
       </button>
       {#if isPlaying}
@@ -383,13 +627,14 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h8v10H8z" /></svg>
         </button>
       {:else}
-        <button class="play-button" onclick={startPlayback} aria-label="Play scale">
+        <button class="play-button" onclick={startPlayback} aria-label={settings.view === 'practice' ? 'Play worksheet' : 'Play scale'}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 7 8 5-8 5V7Z" /></svg>
         </button>
       {/if}
     </div>
 
-    <div class="practice-settings">
+    <div class="practice-settings" class:single={settings.view === 'practice'}>
+      {#if settings.view === 'explore'}
       <label class="direction-control">
         <span>Direction</span>
         <select bind:value={settings.direction} aria-label="Direction">
@@ -398,6 +643,7 @@
           <option value="both">Up & down</option>
         </select>
       </label>
+      {/if}
       <label class="tempo-control">
         <span>Tempo <strong>{settings.tempo}</strong></span>
         <input type="range" min="40" max="200" step="2" bind:value={settings.tempo} aria-label="Tempo in beats per minute" />

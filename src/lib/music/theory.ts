@@ -3,6 +3,7 @@ import type {
   AccidentalPreference,
   ExplorerState,
   FingeringStatus,
+  PracticeSection,
   PlaybackDirection,
   ScaleDefinition,
   ScaleNote
@@ -27,12 +28,34 @@ const INTERVAL_NAMES = [
   'Major seventh',
   'Octave'
 ];
+const DEGREE_LABELS = ['1', '♭2', '2', '♭3', '3', '4', '♯4/♭5', '5', '♭6', '6', '♭7', '7', '8'];
+
+export const DEFAULT_WORKSHEET_SCALE_IDS = [
+  'minor-pentatonic',
+  'dorian',
+  'aeolian',
+  'minor-blues'
+];
+
+export const DEFAULT_WORKSHEET_SECTIONS: PracticeSection[] = [
+  'native-modes',
+  'woven',
+  'thirds',
+  'tonic-arpeggio',
+  'chord-family',
+  'chord-progression',
+  'prompts'
+];
 
 export const DEFAULT_STATE: ExplorerState = {
+  view: 'explore',
   pitchClass: 9,
   octave: 4,
+  maxSemitones: 15,
   scaleId: 'minor-pentatonic',
   rootPitchClass: 9,
+  worksheetScaleIds: [...DEFAULT_WORKSHEET_SCALE_IDS],
+  worksheetSections: [...DEFAULT_WORKSHEET_SECTIONS],
   direction: 'up',
   tempo: 76,
   accidentalPreference: 'context',
@@ -80,53 +103,87 @@ export function pitchClassLabel(pitchClass: number, useFlats = false): string {
   return (useFlats ? FLAT_NAMES : SHARP_NAMES)[((pitchClass % 12) + 12) % 12];
 }
 
+export function degreeLabelForInterval(interval: number): string {
+  const normalized = ((interval % 12) + 12) % 12;
+  if (interval > 0 && normalized === 0) return String(Math.floor(interval / 12) * 7 + 1);
+  return DEGREE_LABELS[normalized] ?? String(interval);
+}
+
+export function scaleNoteForMidi(
+  state: ExplorerState,
+  midi: number,
+  index: number,
+  degree: number,
+  degreeLabel: string,
+  spellingScale: ScaleDefinition,
+  spellingRootPitchClass = state.rootPitchClass
+): ScaleNote {
+  const fundamentalMidi = midiForPitch(state.pitchClass, state.octave);
+  const interval = midi - fundamentalMidi;
+  const fingering =
+    interval >= 0 && interval <= state.maxSemitones
+      ? FINGERINGS.find((candidate) => candidate.semitones === interval) ?? null
+      : null;
+  const useFlats = shouldUseFlats(
+    spellingRootPitchClass,
+    spellingScale,
+    state.accidentalPreference
+  );
+  const concertName = noteName(midi, useFlats);
+  const concert = splitNoteName(concertName);
+  const nakaiMidi = 66 + interval;
+  const nakaiName = noteName(nakaiMidi, false);
+  const nakai = splitNoteName(nakaiName);
+  const status: FingeringStatus = fingering?.status ?? 'unavailable';
+  const warning =
+    status === 'unavailable'
+      ? 'Outside your configured flute range'
+      : status === 'half-hole'
+        ? 'Half-hole; intonation varies'
+        : status === 'alternate'
+          ? 'Cross-fingering; verify on your flute'
+          : status === 'overblown'
+            ? 'Second register; breath and maker dependent'
+            : null;
+
+  return {
+    index,
+    degree,
+    degreeLabel,
+    midi,
+    concertName,
+    concertLetter: concert.letter,
+    concertAccidental: concert.accidental,
+    nakaiMidi,
+    nakaiName,
+    nakaiLetter: nakai.letter,
+    nakaiAccidental: nakai.accidental,
+    frequency: frequencyForMidi(midi),
+    interval,
+    intervalName:
+      interval <= 12 ? INTERVAL_NAMES[interval] : `${interval} semitones above the flute root`,
+    fingering,
+    status,
+    warning
+  };
+}
+
 export function getScaleNotes(state: ExplorerState): ScaleNote[] {
   const fundamentalMidi = midiForPitch(state.pitchClass, state.octave);
   const scale = scaleById(state.scaleId);
   const rootOffset = (state.rootPitchClass - state.pitchClass + 12) % 12;
   const rootMidi = fundamentalMidi + rootOffset;
-  const useFlats = shouldUseFlats(state.rootPitchClass, scale, state.accidentalPreference);
 
   return scale.intervals.map((scaleInterval, index) => {
     const midi = rootMidi + scaleInterval;
-    const interval = midi - fundamentalMidi;
-    const fingering = FINGERINGS.find((candidate) => candidate.semitones === interval) ?? null;
-    const concertName = noteName(midi, useFlats);
-    const concert = splitNoteName(concertName);
-    const nakaiMidi = 66 + interval;
-    const nakaiName = noteName(nakaiMidi, false);
-    const nakai = splitNoteName(nakaiName);
-    const status: FingeringStatus = fingering?.status ?? 'unavailable';
-    const warning =
-      status === 'unavailable'
-        ? 'Outside the modeled range'
-        : status === 'half-hole'
-          ? 'Half-hole; intonation varies'
-          : status === 'alternate'
-            ? 'Cross-fingering; verify on your flute'
-            : status === 'overblown'
-              ? 'Second register; breath and maker dependent'
-              : null;
-
-    return {
-      index,
-      degree: index + 1,
+    return scaleNoteForMidi(
+      state,
       midi,
-      concertName,
-      concertLetter: concert.letter,
-      concertAccidental: concert.accidental,
-      nakaiMidi,
-      nakaiName,
-      nakaiLetter: nakai.letter,
-      nakaiAccidental: nakai.accidental,
-      frequency: frequencyForMidi(midi),
-      interval,
-      intervalName:
-        interval <= 12 ? INTERVAL_NAMES[interval] : `${interval} semitones above the flute root`,
-      fingering,
-      status,
-      warning
-    };
+      index,
+      index + 1,
+      degreeLabelForInterval(scaleInterval),
+      scale
+    );
   });
 }
 
@@ -141,6 +198,14 @@ export function serializeState(state: ExplorerState): URLSearchParams {
   params.set('flute', `${pitchClassLabel(state.pitchClass)}${state.octave}`);
   params.set('scale', state.scaleId);
   params.set('root', pitchClassLabel(state.rootPitchClass));
+  params.set('range', String(state.maxSemitones));
+  if (state.view === 'practice') params.set('view', 'practice');
+  if (state.worksheetScaleIds.join(',') !== DEFAULT_WORKSHEET_SCALE_IDS.join(',')) {
+    params.set('worksheetScales', state.worksheetScaleIds.join(','));
+  }
+  if (state.worksheetSections.join(',') !== DEFAULT_WORKSHEET_SECTIONS.join(',')) {
+    params.set('sections', state.worksheetSections.join(','));
+  }
   if (state.direction !== DEFAULT_STATE.direction) params.set('direction', state.direction);
   if (state.tempo !== DEFAULT_STATE.tempo) params.set('tempo', String(state.tempo));
   if (state.accidentalPreference !== 'context') params.set('accidentals', state.accidentalPreference);
@@ -169,19 +234,42 @@ const PARSED_NOTE_NAMES: Record<string, number> = {
 };
 
 export function parseState(params: URLSearchParams): ExplorerState {
-  const state = { ...DEFAULT_STATE };
+  const state: ExplorerState = {
+    ...DEFAULT_STATE,
+    worksheetScaleIds: [...DEFAULT_WORKSHEET_SCALE_IDS],
+    worksheetSections: [...DEFAULT_WORKSHEET_SECTIONS]
+  };
   const flute = params.get('flute')?.toUpperCase().replace('♯', '#').replace('♭', 'B');
   const fluteMatch = flute?.match(/^([A-G](?:#|B)?)([3-5])$/);
   if (fluteMatch && fluteMatch[1] in PARSED_NOTE_NAMES) {
     state.pitchClass = PARSED_NOTE_NAMES[fluteMatch[1]];
     state.octave = Number(fluteMatch[2]);
+    state.maxSemitones = state.pitchClass === 9 && state.octave === 4 ? 15 : 12;
   }
+
+  if (params.get('view') === 'practice') state.view = 'practice';
 
   const scaleId = params.get('scale');
   if (scaleId && SCALE_DEFINITIONS.some((scale) => scale.id === scaleId)) state.scaleId = scaleId;
 
   const root = params.get('root')?.toUpperCase().replace('♯', '#').replace('♭', 'B');
   if (root && root in PARSED_NOTE_NAMES) state.rootPitchClass = PARSED_NOTE_NAMES[root];
+
+  const range = Number(params.get('range'));
+  if (Number.isInteger(range) && range >= 12 && range <= 17) state.maxSemitones = range;
+
+  const worksheetScales = params
+    .get('worksheetScales')
+    ?.split(',')
+    .filter((id) => SCALE_DEFINITIONS.some((scale) => scale.id === id));
+  if (worksheetScales?.length) state.worksheetScaleIds = [...new Set(worksheetScales)];
+
+  const validSections = new Set<PracticeSection>(DEFAULT_WORKSHEET_SECTIONS);
+  const sections = params
+    .get('sections')
+    ?.split(',')
+    .filter((section): section is PracticeSection => validSections.has(section as PracticeSection));
+  if (sections) state.worksheetSections = [...new Set(sections)];
 
   const direction = params.get('direction');
   if (direction === 'up' || direction === 'down' || direction === 'both') state.direction = direction;

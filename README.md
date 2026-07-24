@@ -1,8 +1,22 @@
 # FluteTab
 
-A responsive Nakai scale explorer for contemporary six-hole, minor-pentatonic Native
-American-style flutes. It places fixed-pitch Nakai notation beside sounding concert notation,
-finger diagrams, interval names, frequencies, and browser-synthesized practice audio.
+A responsive Nakai scale explorer and practice-worksheet generator for contemporary six-hole,
+minor-pentatonic Native American-style flutes. It places fixed-pitch Nakai notation beside
+sounding concert notation, finger diagrams, scale degrees, frequencies, and browser-synthesized
+practice audio.
+
+The Practice Worksheet view generates range-aware material that bridges classical scale practice
+with documented Native-flute exercises:
+
+- parallel minor-pentatonic, Dorian, natural-minor, blues, harmonic-minor, and melodic-minor scales;
+- the flute's related Mode 1, Mode 2, and Mode 4 tonal centers;
+- woven scales, broken thirds, tonic and chord-family arpeggios;
+- a four-chord scale-degree dexterity pattern;
+- short articulation and scale-song prompts.
+
+The default A4 flute profile extends through C6. Other flute keys begin with a conservative
+one-octave profile, and the highest stable note can be saved separately for each physical flute.
+Generated music always wraps into new notation systems rather than using staff scrollbars.
 
 ## Development
 
@@ -29,8 +43,8 @@ After authenticating Wrangler:
 npm run deploy
 ```
 
-No database, account, environment variables, or server-side persistence is required. Explorer
-settings are encoded in the URL.
+No database, account, environment variables, or server-side persistence is required. Explorer and
+worksheet settings are encoded in the URL. Per-flute range preferences are stored in the browser.
 
 ## Music-data policy
 

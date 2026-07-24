@@ -23,6 +23,7 @@ export interface ScaleDefinition {
 export interface ScaleNote {
   index: number;
   degree: number;
+  degreeLabel: string;
   midi: number;
   concertName: string;
   concertLetter: string;
@@ -42,12 +43,56 @@ export interface ScaleNote {
 export type PlaybackDirection = 'up' | 'down' | 'both';
 export type AccidentalPreference = 'context' | 'sharps' | 'flats';
 export type FingeringOrientation = 'mouth-up' | 'mouth-down';
+export type AppView = 'explore' | 'practice';
+export type PracticeSection =
+  | 'native-modes'
+  | 'woven'
+  | 'thirds'
+  | 'tonic-arpeggio'
+  | 'chord-family'
+  | 'chord-progression'
+  | 'prompts';
 
-export interface ExplorerState {
+export type ExerciseKind =
+  | 'scale'
+  | 'mode'
+  | 'woven'
+  | 'thirds'
+  | 'arpeggio'
+  | 'chord-family'
+  | 'chord-progression';
+
+export interface FluteCapabilityProfile {
   pitchClass: number;
   octave: number;
+  maxSemitones: number;
+}
+
+export interface PracticeWorksheetOptions {
+  scaleIds: string[];
+  sections: PracticeSection[];
+}
+
+export interface PracticeExercise {
+  id: string;
+  kind: ExerciseKind;
+  group: string;
+  title: string;
+  subtitle: string;
+  formula: string;
+  notes: ScaleNote[];
+  rangeLimited: boolean;
+}
+
+export interface ExplorerState {
+  view: AppView;
+  pitchClass: number;
+  octave: number;
+  maxSemitones: number;
   scaleId: string;
   rootPitchClass: number;
+  worksheetScaleIds: string[];
+  worksheetSections: PracticeSection[];
   direction: PlaybackDirection;
   tempo: number;
   accidentalPreference: AccidentalPreference;

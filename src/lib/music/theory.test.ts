@@ -22,7 +22,7 @@ describe('music theory model', () => {
     expect(frequencyForMidi(81)).toBe(880);
   });
 
-  it('marks notes beyond the modeled eleven-semitone extension as unavailable', () => {
+  it('marks notes beyond the configured flute profile as unavailable', () => {
     const notes = getScaleNotes({
       ...DEFAULT_STATE,
       rootPitchClass: 7,
@@ -30,7 +30,7 @@ describe('music theory model', () => {
     });
 
     expect(notes.some((note) => note.status === 'unavailable')).toBe(true);
-    expect(notes.at(-1)?.warning).toBe('Outside the modeled range');
+    expect(notes.at(-1)?.warning).toBe('Outside your configured flute range');
   });
 
   it('creates ascending, descending, and turn-around playback orders', () => {

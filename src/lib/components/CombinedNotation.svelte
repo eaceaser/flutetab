@@ -7,11 +7,19 @@
   let {
     notes,
     activeIndex = null,
-    orientation = 'mouth-up'
+    orientation = 'mouth-up',
+    eyebrow = 'Unified score',
+    title = 'Concert, Nakai & fingering',
+    compact = false,
+    showLayerLabels = true
   }: {
     notes: ScaleNote[];
     activeIndex?: number | null;
     orientation?: FingeringOrientation;
+    eyebrow?: string;
+    title?: string;
+    compact?: boolean;
+    showLayerLabels?: boolean;
   } = $props();
 
   let sheet: HTMLDivElement;
@@ -19,8 +27,9 @@
   let alignedLayers: Record<string, boolean> = $state({});
   let columnStart = 174;
   let columnEnd = $derived(width - 34);
+  let columnSpacing = $derived(width < 500 ? 56 : width < 900 ? 64 : 72);
   let notesPerSystem = $derived(
-    Math.max(2, Math.min(8, Math.floor((columnEnd - columnStart) / 54) + 1))
+    Math.max(2, Math.min(10, Math.floor((columnEnd - columnStart) / columnSpacing) + 1))
   );
   let systems = $derived(
     Array.from({ length: Math.ceil(notes.length / notesPerSystem) }, (_, index) =>
@@ -29,11 +38,7 @@
   );
 
   function columnsFor(count: number): number[] {
-    if (count === 1) return [(columnStart + columnEnd) / 2];
-    return Array.from(
-      { length: count },
-      (_, index) => columnStart + (index * (columnEnd - columnStart)) / (count - 1)
-    );
+    return Array.from({ length: count }, (_, index) => columnStart + index * columnSpacing);
   }
 
   onMount(() => {
@@ -47,11 +52,11 @@
   });
 </script>
 
-<div class="notation-sheet" bind:this={sheet}>
+<div class="notation-sheet" class:compact bind:this={sheet}>
   <div class="sheet-heading">
     <div>
-      <span class="eyebrow">Unified score</span>
-      <h3>Concert, Nakai & fingering</h3>
+      <span class="eyebrow">{eyebrow}</span>
+      <h3>{title}</h3>
     </div>
     <span class="alignment-note">Note-aligned</span>
   </div>
@@ -60,10 +65,12 @@
     {#each systems as system, systemIndex (`${systemIndex}-${system.map((note) => note.midi).join('-')}`)}
       {@const columns = columnsFor(system.length)}
       <section class="notation-system" aria-label={`Music system ${systemIndex + 1}`}>
-        <div class="layer-heading">
-          <h4>Concert pitch</h4>
-          {#if systemIndex === 0}<small>Sounding notes</small>{/if}
-        </div>
+        {#if systemIndex === 0 && showLayerLabels}
+          <div class="layer-heading">
+            <h4>Concert pitch</h4>
+            <small>Sounding notes</small>
+          </div>
+        {/if}
         <div class="concert-layer">
           <StaffSystem
             notes={system}
@@ -77,10 +84,12 @@
           />
         </div>
 
-        <div class="layer-heading nakai-heading">
-          <h4>Nakai notation</h4>
-          {#if systemIndex === 0}<small>Fixed four-sharp transposition</small>{/if}
-        </div>
+        {#if systemIndex === 0 && showLayerLabels}
+          <div class="layer-heading nakai-heading">
+            <h4>Nakai notation</h4>
+            <small>Fixed four-sharp transposition</small>
+          </div>
+        {/if}
         <div class="nakai-layer">
           <StaffSystem
             notes={system}
@@ -94,10 +103,12 @@
           />
         </div>
 
-        <div class="layer-heading fingering-heading">
-          <h4>Fingering tablature</h4>
-          {#if systemIndex === 0}<small>Mouth end shown by the tapered cap</small>{/if}
-        </div>
+        {#if systemIndex === 0 && showLayerLabels}
+          <div class="layer-heading fingering-heading">
+            <h4>Fingering tablature</h4>
+            <small>Mouth end shown by the tapered cap</small>
+          </div>
+        {/if}
         <div
           class="fingering-layer"
           data-aligned={alignedLayers[`concert-${systemIndex}`] === true &&
@@ -113,10 +124,13 @@
     {/each}
   </div>
 
-  <div class="sheet-note-names">
-    <p><strong>Concert</strong> {notes.map((note) => note.concertName).join(' · ')}</p>
-    <p><strong>Nakai</strong> {notes.map((note) => note.nakaiName).join(' · ')}</p>
-  </div>
+  {#if !compact}
+    <div class="sheet-note-names">
+      <p><strong>Degrees</strong> {notes.map((note) => note.degreeLabel).join(' · ')}</p>
+      <p><strong>Concert</strong> {notes.map((note) => note.concertName).join(' · ')}</p>
+      <p><strong>Nakai</strong> {notes.map((note) => note.nakaiName).join(' · ')}</p>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -126,6 +140,14 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
+  }
+
+  .notation-sheet.compact {
+    box-shadow: none;
+  }
+
+  .compact .sheet-heading {
+    display: none;
   }
 
   .sheet-heading {
@@ -240,6 +262,16 @@
 
     .alignment-note {
       font-size: 0.62rem;
+    }
+  }
+
+  @media print {
+    .notation-sheet {
+      break-inside: auto;
+    }
+
+    .notation-system {
+      break-inside: avoid;
     }
   }
 </style>

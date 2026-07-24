@@ -163,40 +163,47 @@ main {
   max-width: 650px;
 }
 
-.hero-mark {
-  align-items: center;
+.view-switcher {
+  background: rgb(255 253 248 / 72%);
   border: 1px solid var(--border);
-  border-radius: 50%;
-  display: none;
-  flex: 0 0 auto;
-  height: 8.5rem;
-  justify-content: center;
-  margin: 0 2rem 0 3rem;
-  position: relative;
-  width: 8.5rem;
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 1fr 1fr;
+  margin: 0 0 1.25rem;
+  padding: 0.35rem;
 }
 
-.hero-mark::after {
-  border: 1px dashed var(--teal-muted);
-  border-radius: 50%;
-  content: '';
-  inset: 0.42rem;
-  position: absolute;
+.view-switcher button {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
 }
 
-.hero-mark span {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  font-weight: 600;
+.view-switcher button.active {
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--teal-dark);
 }
 
-.hero-mark small {
-  bottom: 1.65rem;
+.view-switcher span,
+.view-switcher small {
+  display: block;
+}
+
+.view-switcher span {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.view-switcher small {
   color: var(--text-muted);
-  font-size: 0.57rem;
-  letter-spacing: 0.08em;
-  position: absolute;
-  text-transform: uppercase;
+  display: none;
+  font-size: 0.64rem;
+  margin-top: 0.1rem;
 }
 
 .workspace {
@@ -273,6 +280,13 @@ main {
   display: grid;
   gap: 0.75rem;
   margin-top: 1.15rem;
+}
+
+.control-help {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  line-height: 1.35;
+  margin: -0.25rem 0 0 0.15rem;
 }
 
 label > span,
@@ -381,6 +395,87 @@ select {
   border-top: 1px solid var(--border-soft);
   margin-top: 1rem;
   padding-top: 0.75rem;
+}
+
+.worksheet-options {
+  border: 0;
+  border-top: 1px solid var(--border-soft);
+  display: grid;
+  gap: 0.15rem;
+  margin: 1rem 0 0;
+  padding: 0.8rem 0 0;
+}
+
+.worksheet-options legend {
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0 0 0.35rem;
+  text-transform: uppercase;
+}
+
+.check-row {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  gap: 0.65rem;
+  min-height: 42px;
+  padding: 0.35rem 0.45rem;
+}
+
+.check-row:hover {
+  background: var(--paper);
+}
+
+.check-row input {
+  accent-color: var(--teal);
+  flex: 0 0 auto;
+  height: 1rem;
+  width: 1rem;
+}
+
+.check-row > span {
+  color: var(--ink);
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: normal;
+  margin: 0;
+  text-transform: none;
+}
+
+.check-row strong,
+.check-row small {
+  display: block;
+}
+
+.check-row small {
+  color: var(--text-muted);
+  font-size: 0.61rem;
+  font-weight: 500;
+}
+
+.preset-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--teal-dark);
+  font-size: 0.69rem;
+  font-weight: 800;
+  margin-top: 0.9rem;
+  padding: 0.55rem 0.75rem;
+  width: 100%;
+}
+
+.preset-button:hover {
+  background: var(--teal-soft);
+  border-color: var(--teal-muted);
+}
+
+.worksheet-summary {
+  margin-top: 0.8rem;
 }
 
 summary {
@@ -804,6 +899,10 @@ summary {
   grid-template-columns: minmax(7.5rem, 0.9fr) minmax(8rem, 1.1fr);
 }
 
+.practice-settings.single {
+  grid-template-columns: 1fr;
+}
+
 .direction-control select {
   background-color: rgb(255 255 255 / 9%);
   border-color: rgb(255 255 255 / 15%);
@@ -869,8 +968,8 @@ footer p {
     padding-right: 1.5rem;
   }
 
-  .hero-mark {
-    display: flex;
+  .view-switcher small {
+    display: block;
   }
 
   .control-panel {
@@ -903,6 +1002,10 @@ footer p {
     justify-self: end;
     max-width: 24rem;
     width: 100%;
+  }
+
+  .practice-settings.single {
+    max-width: 15rem;
   }
 
   footer {
@@ -977,6 +1080,7 @@ footer p {
 
   .site-header nav,
   .hero,
+  .view-switcher,
   .control-panel,
   .practice-bar,
   .bridge-note,
