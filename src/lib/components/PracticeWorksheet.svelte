@@ -28,7 +28,7 @@
   <header class="worksheet-title">
     <div>
       <p class="kicker">Generated daily practice</p>
-      <h2>Scale & arpeggio worksheet</h2>
+      <h1>Scale & arpeggio worksheet</h1>
       <p>
         Every pitch is bounded by your flute profile. Concert pitch, Nakai notation, and
         fingering remain aligned note by note.
@@ -147,7 +147,7 @@
     padding: 0.2rem 0 1.2rem;
   }
 
-  .worksheet-title h2,
+  .worksheet-title h1,
   .practice-prompts h2 {
     font-family: var(--font-display);
     font-size: clamp(1.8rem, 5vw, 2.55rem);

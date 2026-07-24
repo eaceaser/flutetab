@@ -222,11 +222,14 @@
 
 <header class="site-header">
   <a class="brand" href="/" aria-label="FluteTab home">
-    <svg viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M9 38 36 11c2-2 5-2 7 0s2 5 0 7L16 45H9v-7Z" />
-      <circle cx="34" cy="20" r="2.1" />
-      <circle cx="29" cy="25" r="2.1" />
-      <circle cx="24" cy="30" r="2.1" />
+    <svg viewBox="0 0 28 48" aria-hidden="true">
+      <path d="M9 3h10l3 5v36H6V8l3-5Z" />
+      <circle class="tone-hole" cx="14" cy="14" r="1.8" />
+      <circle class="tone-hole" cx="14" cy="19" r="1.8" />
+      <circle class="tone-hole" cx="14" cy="24" r="1.8" />
+      <circle class="tone-hole" cx="14" cy="29" r="1.8" />
+      <circle class="tone-hole" cx="14" cy="34" r="1.8" />
+      <circle class="tone-hole" cx="14" cy="39" r="1.8" />
     </svg>
     <span>FluteTab</span>
   </a>
@@ -237,18 +240,6 @@
 </header>
 
 <main>
-  <section class="hero">
-    <div>
-      <p class="kicker">{settings.view === 'practice' ? 'Range-aware practice studio' : 'Nakai scale explorer'}</p>
-      <h1>{settings.view === 'practice' ? 'Build a practice page for this flute.' : 'See the music you already know.'}</h1>
-      <p class="hero-copy">
-        {settings.view === 'practice'
-          ? 'Connect Native-flute patterns with the scale and arpeggio practice you know from classical training.'
-          : 'Connect fingering, interval, Nakai tablature, and concert pitch—then hear the scale on your flute.'}
-      </p>
-    </div>
-  </section>
-
   <nav class="view-switcher" aria-label="App view">
     <button
       class:active={settings.view === 'explore'}
@@ -491,7 +482,7 @@
       <div class="explorer-heading">
         <div>
           <p class="kicker">Your scale</p>
-          <h2>{pitchClassLabel(settings.rootPitchClass)} {selectedScale.shortName}</h2>
+          <h1>{pitchClassLabel(settings.rootPitchClass)} {selectedScale.shortName}</h1>
           <p>
             On a {fluteName} flute · {playableCount} of {notes.length} notes modeled
             {#if warningCount > 0}<span class="warning-count">· {warningCount} need care</span>{/if}
