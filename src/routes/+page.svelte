@@ -4,6 +4,7 @@
   import { fluteSynth } from '$lib/audio/fluteSynth';
   import CombinedNotation from '$lib/components/CombinedNotation.svelte';
   import FingeringDiagram from '$lib/components/FingeringDiagram.svelte';
+  import ListenPractice from '$lib/components/ListenPractice.svelte';
   import PracticeWorksheet from '$lib/components/PracticeWorksheet.svelte';
   import { NOTE_OPTIONS, REGISTER_OPTIONS, SCALE_DEFINITIONS } from '$lib/music/data';
   import { generatePracticeWorksheet, worksheetPlaybackNotes } from '$lib/music/practice';
@@ -35,6 +36,13 @@
 
   let selectedScale = $derived(scaleById(settings.scaleId));
   let notes = $derived(getScaleNotes(settings));
+  let listenNotes = $derived(
+    getScaleNotes({
+      ...settings,
+      scaleId: 'minor-pentatonic',
+      rootPitchClass: settings.pitchClass
+    })
+  );
   let exercises = $derived(generatePracticeWorksheet(settings));
   let fundamentalMidi = $derived(midiForPitch(settings.pitchClass, settings.octave));
   let fluteName = $derived(`${noteName(fundamentalMidi, false)} minor`);
@@ -213,10 +221,10 @@
 </script>
 
 <svelte:head>
-  <title>FluteTab — Nakai scale explorer & practice worksheets</title>
+  <title>FluteTab — Nakai flute scales & listening practice</title>
   <meta
     name="description"
-    content="Explore Native American-style flute scales and generate range-aware practice worksheets with Nakai notation, concert pitch, fingerings, and audio."
+    content="Explore Native American-style flute scales, generate practice worksheets, and practice hands-free with private local pitch detection."
   />
 </svelte:head>
 
@@ -257,10 +265,25 @@
       <span>Practice worksheet</span>
       <small>Scales, patterns & arpeggios</small>
     </button>
+    <button
+      class:active={settings.view === 'listen'}
+      aria-pressed={settings.view === 'listen'}
+      onclick={() => (settings.view = 'listen')}
+    >
+      <span>Listen practice</span>
+      <small>Hands-free pitch matching</small>
+    </button>
   </nav>
 
   <div class="workspace">
-    <aside class="control-panel" aria-label={settings.view === 'practice' ? 'Worksheet configuration' : 'Scale configuration'}>
+    <aside
+      class="control-panel"
+      aria-label={settings.view === 'practice'
+        ? 'Worksheet configuration'
+        : settings.view === 'listen'
+          ? 'Listen practice configuration'
+          : 'Scale configuration'}
+    >
       <div class="panel-heading">
         <div>
           <span class="step">01</span>
@@ -288,6 +311,7 @@
         </label>
       </div>
 
+      {#if settings.view !== 'listen'}
       <div class="control-stack">
         <label>
           <span>Highest stable note</span>
@@ -304,13 +328,20 @@
           Half-hole and upper-register fingerings remain marked.
         </p>
       </div>
+      {/if}
 
       <div class="divider"></div>
 
       <div class="panel-heading">
         <div>
           <span class="step">02</span>
-          <h2>{settings.view === 'practice' ? 'Build worksheet' : 'Choose a scale'}</h2>
+          <h2>
+            {settings.view === 'practice'
+              ? 'Build worksheet'
+              : settings.view === 'listen'
+                ? 'Core-note drill'
+                : 'Choose a scale'}
+          </h2>
         </div>
       </div>
 
@@ -375,7 +406,7 @@
           </label>
         </div>
       </details>
-      {:else}
+      {:else if settings.view === 'practice'}
         <div class="control-stack">
           <label>
             <span>Practice key</span>
@@ -464,6 +495,28 @@
             </label>
           </div>
         </details>
+      {:else}
+        <div class="scale-summary listen-summary">
+          <span>Native minor pentatonic</span>
+          <strong>1 · ♭3 · 4 · 5 · ♭7 · 8</strong>
+          <p>
+            The six reliable straight-fingering notes are randomized. Missed notes get extra
+            weight and return sooner.
+          </p>
+        </div>
+
+        <details class="advanced-controls">
+          <summary>Display preference</summary>
+          <div class="control-stack details-body">
+            <label>
+              <span>Fingering orientation</span>
+              <select bind:value={settings.orientation} aria-label="Fingering orientation">
+                <option value="mouth-up">Mouth end up</option>
+                <option value="mouth-down">Mouth end down</option>
+              </select>
+            </label>
+          </div>
+        </details>
       {/if}
     </aside>
 
@@ -477,6 +530,14 @@
           onPlayExercise={playExercise}
         />
       </section>
+    {:else if settings.view === 'listen'}
+      {#key `${settings.pitchClass}-${settings.octave}`}
+        <ListenPractice
+          notes={listenNotes}
+          orientation={settings.orientation}
+          {fluteName}
+        />
+      {/key}
     {:else}
     <section class="explorer" aria-label="Generated scale">
       <div class="explorer-heading">
@@ -593,6 +654,7 @@
   </div>
 </main>
 
+{#if settings.view !== 'listen'}
 <section class="practice-bar" aria-label="Practice playback">
   <div class="practice-inner">
     <div class="now-playing">
@@ -642,6 +704,7 @@
     </div>
   </div>
 </section>
+{/if}
 
 <footer>
   <span>FluteTab</span>

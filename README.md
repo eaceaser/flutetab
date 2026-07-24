@@ -5,6 +5,11 @@ minor-pentatonic Native American-style flutes. It places fixed-pitch Nakai notat
 sounding concert notation, finger diagrams, scale degrees, frequencies, and browser-synthesized
 practice audio.
 
+Listen Practice adds a hands-free drill for the six core minor-pentatonic notes. After one
+microphone-permission action it calibrates against the flute's fundamental, shows live cents
+feedback, and advances after a stable pitch match. Pitch analysis happens entirely in the browser;
+audio is neither recorded nor uploaded.
+
 The Practice Worksheet view generates range-aware material that bridges classical scale practice
 with documented Native-flute exercises:
 

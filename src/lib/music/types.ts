@@ -43,7 +43,7 @@ export interface ScaleNote {
 export type PlaybackDirection = 'up' | 'down' | 'both';
 export type AccidentalPreference = 'context' | 'sharps' | 'flats';
 export type FingeringOrientation = 'mouth-up' | 'mouth-down';
-export type AppView = 'explore' | 'practice';
+export type AppView = 'explore' | 'practice' | 'listen';
 export type PracticeSection =
   | 'native-modes'
   | 'woven'

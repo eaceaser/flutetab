@@ -199,7 +199,7 @@ export function serializeState(state: ExplorerState): URLSearchParams {
   params.set('scale', state.scaleId);
   params.set('root', pitchClassLabel(state.rootPitchClass));
   params.set('range', String(state.maxSemitones));
-  if (state.view === 'practice') params.set('view', 'practice');
+  if (state.view !== 'explore') params.set('view', state.view);
   if (state.worksheetScaleIds.join(',') !== DEFAULT_WORKSHEET_SCALE_IDS.join(',')) {
     params.set('worksheetScales', state.worksheetScaleIds.join(','));
   }
@@ -247,7 +247,8 @@ export function parseState(params: URLSearchParams): ExplorerState {
     state.maxSemitones = state.pitchClass === 9 && state.octave === 4 ? 15 : 12;
   }
 
-  if (params.get('view') === 'practice') state.view = 'practice';
+  const view = params.get('view');
+  if (view === 'practice' || view === 'listen') state.view = view;
 
   const scaleId = params.get('scale');
   if (scaleId && SCALE_DEFINITIONS.some((scale) => scale.id === scaleId)) state.scaleId = scaleId;
