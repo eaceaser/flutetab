@@ -78,6 +78,10 @@ test('calibrates, matches, and advances without another action', async ({ page }
   await expect(page.getByText('First, calibrate your flute')).toBeVisible();
   await expect(page.getByText(/1 matched/)).toBeVisible({ timeout: 5_000 });
   await expect(page.getByRole('img', { name: 'Nakai notation A4' })).toBeVisible();
+  await expect(page.getByLabel('Pitch match tolerance in cents')).toHaveValue('37');
+  await expect(page.getByLabel('Enable 10-second note timer')).not.toBeChecked();
+  await page.getByRole('button', { name: 'Skip note' }).click();
+  await expect(page.getByText(/1 missed/)).toBeVisible();
 });
 
 test('listen practice has no page-level mobile overflow', async ({ page }) => {

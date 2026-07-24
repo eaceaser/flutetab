@@ -31,7 +31,8 @@
   let targetIndex = $state(0);
   let detectedFrequency: number | null = $state(null);
   let cents: number | null = $state(null);
-  let tolerance = $state(35);
+  let tolerance = $state(37);
+  let timerEnabled = $state(false);
   let calibrationOffset = $state(0);
   let calibrationMessage = $state('Hold the fundamental with an easy, steady breath.');
   let stableProgress = $state(0);
@@ -43,7 +44,7 @@
   let targetStartedAt = 0;
   let calibrationStartedAt = 0;
   let calibrationReadings: number[] = [];
-  let transitioning = false;
+  let transitioning = $state(false);
   let advanceTimer: number | null = null;
   let selector = makeSelector();
   const stableMatch = new StableMatch();
@@ -68,6 +69,11 @@
     observer.observe(node);
     promptWidth = Math.max(180, Math.floor(node.getBoundingClientRect().width));
     return { destroy: () => observer.disconnect() };
+  }
+
+  function toggleTimer(event: Event): void {
+    timerEnabled = (event.currentTarget as HTMLInputElement).checked;
+    if (timerEnabled) targetStartedAt = performance.now();
   }
 
   async function start(): Promise<void> {
@@ -155,8 +161,8 @@
     }
 
     if (phase !== 'practicing' || transitioning) return;
-    if (timestamp - targetStartedAt >= LISTEN_TIMEOUT_MS) {
-      completeTarget(false);
+    if (timerEnabled && timestamp - targetStartedAt >= LISTEN_TIMEOUT_MS) {
+      completeTarget(false, 'timeout');
       return;
     }
     if (!reading) {
@@ -177,7 +183,7 @@
     if (progress >= LISTEN_STABLE_MS) completeTarget(true);
   }
 
-  function completeTarget(success: boolean): void {
+  function completeTarget(success: boolean, reason: 'timeout' | 'skip' = 'timeout'): void {
     if (transitioning) return;
     transitioning = true;
     showHint = true;
@@ -189,7 +195,10 @@
     } else {
       missedCount += 1;
       selector.markMiss(targetIndex);
-      feedback = 'Time — this note will return sooner';
+      feedback =
+        reason === 'skip'
+          ? 'Skipped — this note will return sooner'
+          : 'Time — this note will return sooner';
     }
 
     advanceTimer = window.setTimeout(() => {
@@ -269,7 +278,7 @@
     <div class="practice-stage">
       <div class="session-line">
         <span>{calibrationMessage}</span>
-        <span><strong>{correctCount}</strong> matched · <strong>{missedCount}</strong> timed out</span>
+        <span><strong>{correctCount}</strong> matched · <strong>{missedCount}</strong> missed</span>
       </div>
 
       <div class="practice-target" class:matched={feedback === 'Matched'}>
@@ -304,6 +313,9 @@
         {:else}
           <button class="hint-button" onclick={() => (showHint = true)}>Show fingering hint</button>
         {/if}
+        {#if !transitioning}
+          <button class="skip-button" onclick={() => completeTarget(false, 'skip')}>Skip note</button>
+        {/if}
       </div>
 
       <div class="tuner" class:in-tune={cents !== null && Math.abs(cents) <= tolerance}>
@@ -333,11 +345,24 @@
           type="range"
           min="20"
           max="50"
-          step="5"
+          step="1"
           bind:value={tolerance}
           aria-label="Pitch match tolerance in cents"
         />
         <small>Wider is more forgiving. Note attacks are ignored before matching begins.</small>
+      </label>
+
+      <label class="timer-control">
+        <input
+          type="checkbox"
+          checked={timerEnabled}
+          onchange={toggleTimer}
+          aria-label="Enable 10-second note timer"
+        />
+        <span>
+          <strong>10-second note timer</strong>
+          <small>Off by default. Leave it off for unhurried practice, or skip a note manually.</small>
+        </span>
       </label>
     </div>
   {/if}

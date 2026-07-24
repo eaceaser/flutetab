@@ -954,18 +954,28 @@ summary {
 .answer-area {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
   justify-content: center;
   min-height: 7.5rem;
 }
 
-.hint-button {
+.hint-button,
+.skip-button {
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 999px;
-  color: var(--teal-dark);
   font-size: 0.72rem;
   font-weight: 750;
   padding: 0.5rem 0.85rem;
+}
+
+.hint-button {
+  color: var(--teal-dark);
+}
+
+.skip-button {
+  color: var(--text-muted);
 }
 
 .answer-reveal {
@@ -1105,6 +1115,36 @@ summary {
 .tolerance-control > small {
   color: var(--text-muted);
   font-size: 0.63rem;
+}
+
+.timer-control {
+  align-items: flex-start;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+  padding-top: 1rem;
+}
+
+.timer-control input {
+  accent-color: var(--teal);
+  margin: 0.15rem 0 0;
+}
+
+.timer-control span,
+.timer-control strong,
+.timer-control small {
+  display: block;
+}
+
+.timer-control strong {
+  font-size: 0.72rem;
+}
+
+.timer-control small {
+  color: var(--text-muted);
+  font-size: 0.63rem;
+  font-weight: 400;
 }
 
 @keyframes listen-pulse {
