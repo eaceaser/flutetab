@@ -160,29 +160,35 @@ const f = (
 });
 
 /**
- * A conservative, generic chart for contemporary six-hole minor-pentatonic flutes.
- * The reliable straight-fingering notes are marked primary. Every chromatic extension
- * is intentionally labeled as alternate or half-hole because behavior varies by flute.
+ * Typical fingerings for contemporary six-hole, pentatonic-minor Native American flutes.
+ * Patterns run from the mouth end to the foot end and follow Flutopedia's standard
+ * six-hole chart and its documented alternates:
+ * https://www.flutopedia.com/fingeringChart_SixPentatonicMinor.htm
+ *
+ * The reliable minor-pentatonic notes are marked primary. Other lower-register notes
+ * remain marked alternate or half-hole because their tuning varies by flute. Flutopedia
+ * shows two different amounts of foot-end-hole coverage for semitones 1 and 2; the
+ * diagram model represents both as a half-covered hole, with the distinction in the label.
  */
 export const FINGERINGS: Fingering[] = [
   f(0, '●●●●●●', 'primary', 'All holes covered'),
-  f(1, '●●●●●◐', 'half-hole', 'Half-hole the foot-end hole'),
-  f(2, '●●●●○●', 'alternate', 'Cross-fingering; verify on your flute'),
+  f(1, '●●●●●◐', 'half-hole', 'Slightly vent the foot-end hole'),
+  f(2, '●●●●●◐', 'half-hole', 'Half-hole the foot-end hole'),
   f(3, '●●●●●○', 'primary', 'Straight fingering'),
-  f(4, '●●●●◐○', 'half-hole', 'Half-hole the second foot-end hole'),
+  f(4, '●●●●○●', 'alternate', 'Move the bottom finger to the foot-end hole'),
   f(5, '●●●●○○', 'primary', 'Straight fingering'),
-  f(6, '●●●◐○○', 'half-hole', 'Half-hole the third foot-end hole'),
+  f(6, '●●●○●○', 'alternate', 'Cross-fingering; verify on your flute'),
   f(7, '●●●○○○', 'primary', 'Straight fingering'),
-  f(8, '●●◐○○○', 'half-hole', 'Half-hole the third mouth-end hole'),
-  f(9, '●●○○○○', 'alternate', 'Common cross-fingering; verify intonation'),
+  f(8, '●●○●○○', 'alternate', 'Cross-fingering; verify on your flute'),
+  f(9, '●●○○○○', 'alternate', 'Alternate straight fingering; verify intonation'),
   f(10, '●○●○○○', 'primary', 'Straight fingering'),
-  f(11, '●◐●○○○', 'half-hole', 'Half-hole the second mouth-end hole'),
+  f(11, '○●●○○○', 'alternate', 'Cross-fingering; verify on your flute'),
   f(12, '○○●○○○', 'primary', 'Octave fingering'),
-  f(13, '◐●●●○○', 'overblown', 'Second register; breath-sensitive'),
-  f(14, '○●●●○○', 'overblown', 'Second register; maker-dependent'),
-  f(15, '○○●●○○', 'overblown', 'Second register; maker-dependent'),
-  f(16, '○○○●○○', 'overblown', 'Second register; maker-dependent'),
-  f(17, '○○○○○○', 'overblown', 'Second register; maker-dependent')
+  f(13, '○●●●●●', 'overblown', 'Second register; breath-sensitive'),
+  f(14, '◐●●●●◐', 'overblown', 'Second register; maker-dependent'),
+  f(15, '○●●●●○', 'overblown', 'Open both end holes and overblow'),
+  f(16, '◐●●●◐○', 'overblown', 'Extended range; maker-dependent'),
+  f(17, '◐●●●○○', 'overblown', 'Extended range; maker-dependent')
 ];
 
 export const NOTE_OPTIONS = [

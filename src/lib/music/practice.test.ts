@@ -17,6 +17,7 @@ describe('practice worksheet generation', () => {
   it('names the natural Native-flute mode centers and labels an incomplete mode', () => {
     const exercises = generatePracticeWorksheet({ ...DEFAULT_STATE, view: 'practice' });
     const nativeModes = exercises.filter((exercise) => exercise.kind === 'mode');
+    const cMajorHighC = nativeModes[1].notes.find((note) => note.concertName === 'C6');
 
     expect(nativeModes.map((exercise) => exercise.title)).toEqual([
       'Mode 1 · A Minor pentatonic',
@@ -24,6 +25,15 @@ describe('practice worksheet generation', () => {
       'Mode 4 · D Minor pentatonic'
     ]);
     expect(nativeModes.map((exercise) => exercise.rangeLimited)).toEqual([false, false, true]);
+    expect(cMajorHighC?.interval).toBe(15);
+    expect(cMajorHighC?.fingering?.holes).toEqual([
+      'open',
+      'closed',
+      'closed',
+      'closed',
+      'closed',
+      'open'
+    ]);
     expect(nativeModes[2].notes.some((note) => note.concertName === 'C6')).toBe(true);
     expect(nativeModes[2].notes.some((note) => note.concertName === 'D6')).toBe(false);
   });

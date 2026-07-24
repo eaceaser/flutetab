@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { FINGERINGS } from './data';
 import {
   DEFAULT_STATE,
   frequencyForMidi,
@@ -9,6 +10,36 @@ import {
 } from './theory';
 
 describe('music theory model', () => {
+  it('maps intervals to the standard six-hole pentatonic-minor fingerings', () => {
+    const symbol = { closed: '●', half: '◐', open: '○' } as const;
+
+    expect(
+      FINGERINGS.map((fingering) => [
+        fingering.semitones,
+        fingering.holes.map((hole) => symbol[hole]).join('')
+      ])
+    ).toEqual([
+      [0, '●●●●●●'],
+      [1, '●●●●●◐'],
+      [2, '●●●●●◐'],
+      [3, '●●●●●○'],
+      [4, '●●●●○●'],
+      [5, '●●●●○○'],
+      [6, '●●●○●○'],
+      [7, '●●●○○○'],
+      [8, '●●○●○○'],
+      [9, '●●○○○○'],
+      [10, '●○●○○○'],
+      [11, '○●●○○○'],
+      [12, '○○●○○○'],
+      [13, '○●●●●●'],
+      [14, '◐●●●●◐'],
+      [15, '○●●●●○'],
+      [16, '◐●●●◐○'],
+      [17, '◐●●●○○']
+    ]);
+  });
+
   it('generates the native A4 minor pentatonic scale in concert and Nakai pitch', () => {
     const notes = getScaleNotes({ ...DEFAULT_STATE });
 

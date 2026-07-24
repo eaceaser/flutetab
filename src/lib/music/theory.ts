@@ -141,7 +141,7 @@ export function scaleNoteForMidi(
       : status === 'half-hole'
         ? 'Half-hole; intonation varies'
         : status === 'alternate'
-          ? 'Cross-fingering; verify on your flute'
+          ? 'Alternate fingering; verify on your flute'
           : status === 'overblown'
             ? 'Second register; breath and maker dependent'
             : null;
