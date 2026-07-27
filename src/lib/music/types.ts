@@ -97,4 +97,6 @@ export interface ExplorerState {
   tempo: number;
   accidentalPreference: AccidentalPreference;
   orientation: FingeringOrientation;
+  showConcertStaff: boolean;
+  showFingeringTab: boolean;
 }

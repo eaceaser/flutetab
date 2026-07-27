@@ -59,7 +59,9 @@ export const DEFAULT_STATE: ExplorerState = {
   direction: 'up',
   tempo: 76,
   accidentalPreference: 'context',
-  orientation: 'mouth-up'
+  orientation: 'mouth-up',
+  showConcertStaff: true,
+  showFingeringTab: true
 };
 
 export const clampTempo = (tempo: number) => Math.max(40, Math.min(200, Math.round(tempo)));
@@ -210,6 +212,8 @@ export function serializeState(state: ExplorerState): URLSearchParams {
   if (state.tempo !== DEFAULT_STATE.tempo) params.set('tempo', String(state.tempo));
   if (state.accidentalPreference !== 'context') params.set('accidentals', state.accidentalPreference);
   if (state.orientation !== DEFAULT_STATE.orientation) params.set('orientation', state.orientation);
+  if (!state.showConcertStaff) params.set('concertStaff', 'off');
+  if (!state.showFingeringTab) params.set('fingeringTab', 'off');
   return params;
 }
 
@@ -285,6 +289,9 @@ export function parseState(params: URLSearchParams): ExplorerState {
 
   const orientation = params.get('orientation');
   if (orientation === 'mouth-up' || orientation === 'mouth-down') state.orientation = orientation;
+
+  if (params.get('concertStaff') === 'off') state.showConcertStaff = false;
+  if (params.get('fingeringTab') === 'off') state.showFingeringTab = false;
 
   return state;
 }

@@ -88,7 +88,9 @@ describe('practice worksheet generation', () => {
       ...parsed,
       maxSemitones: 16,
       worksheetScaleIds: ['dorian'],
-      worksheetSections: ['thirds', 'prompts']
+      worksheetSections: ['thirds', 'prompts'],
+      showConcertStaff: false,
+      showFingeringTab: false
     };
     const restored = parseState(serializeState(state));
 
@@ -96,5 +98,7 @@ describe('practice worksheet generation', () => {
     expect(restored.maxSemitones).toBe(16);
     expect(restored.worksheetScaleIds).toEqual(['dorian']);
     expect(restored.worksheetSections).toEqual(['thirds', 'prompts']);
+    expect(restored.showConcertStaff).toBe(false);
+    expect(restored.showFingeringTab).toBe(false);
   });
 });

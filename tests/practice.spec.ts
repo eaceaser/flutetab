@@ -38,6 +38,22 @@ test('worksheet options and flute range round-trip through the URL', async ({ pa
   await expect(page.getByRole('checkbox', { name: /Woven scale/ })).not.toBeChecked();
 });
 
+test('worksheet display toggles apply to every exercise and never hide Nakai', async ({ page }) => {
+  await page.goto(
+    '/?view=practice&range=15&worksheetScales=minor-pentatonic&sections=tonic-arpeggio'
+  );
+  await page.getByText('Display preferences').click();
+
+  await page.getByRole('checkbox', { name: 'Standard treble clef staff' }).uncheck();
+  await page.getByRole('checkbox', { name: 'Flute fingering tab staff' }).uncheck();
+
+  const systems = await page.locator('.worksheet .notation-system').count();
+  await expect(page.locator('.worksheet .concert-layer')).toHaveCount(0);
+  await expect(page.locator('.worksheet .fingering-layer')).toHaveCount(0);
+  await expect(page.locator('.worksheet .nakai-layer')).toHaveCount(systems);
+  await expect(page.getByRole('heading', { name: 'Nakai notation' })).toHaveCount(1);
+});
+
 test('stores a separate playable range for each flute profile', async ({ page }) => {
   await page.goto('/?view=practice&range=15');
 

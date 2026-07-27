@@ -25,6 +25,27 @@ test('updates the shareable URL when scale settings change', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'D Dorian' })).toBeVisible();
 });
 
+test('display toggles hide optional scale staves while Nakai remains visible', async ({ page }) => {
+  await page.goto('/');
+  await page.getByText('Display preferences').click();
+
+  await page.getByRole('checkbox', { name: 'Standard treble clef staff' }).uncheck();
+  await page.getByRole('checkbox', { name: 'Flute fingering tab staff' }).uncheck();
+
+  const systems = await page.locator('.staffs .notation-system').count();
+  await expect(page.locator('.staffs .concert-layer')).toHaveCount(0);
+  await expect(page.locator('.staffs .fingering-layer')).toHaveCount(0);
+  await expect(page.locator('.staffs .nakai-layer')).toHaveCount(systems);
+  await expect(page).toHaveURL(/concertStaff=off/);
+  await expect(page).toHaveURL(/fingeringTab=off/);
+
+  await page.reload();
+  await page.getByText('Display preferences').click();
+  await expect(page.getByRole('checkbox', { name: 'Standard treble clef staff' })).not.toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'Flute fingering tab staff' })).not.toBeChecked();
+  await expect(page.locator('.staffs .nakai-layer')).toHaveCount(systems);
+});
+
 test('mobile layout has no page-level horizontal overflow and keeps practice controls visible', async ({
   page
 }) => {

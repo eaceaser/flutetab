@@ -11,12 +11,16 @@
     activeIndex = null,
     orientation = 'mouth-up',
     showPrompts = true,
+    showConcertStaff = true,
+    showFingeringTab = true,
     onPlayExercise
   }: {
     exercises: PracticeExercise[];
     activeIndex?: number | null;
     orientation?: FingeringOrientation;
     showPrompts?: boolean;
+    showConcertStaff?: boolean;
+    showFingeringTab?: boolean;
     onPlayExercise: (exercise: PracticeExercise) => void;
   } = $props();
 
@@ -30,8 +34,8 @@
       <p class="kicker">Generated daily practice</p>
       <h1>Scale & arpeggio worksheet</h1>
       <p>
-        Every pitch is bounded by your flute profile. Concert pitch, Nakai notation, and
-        fingering remain aligned note by note.
+        Every pitch is bounded by your flute profile. Enabled notation layers remain aligned
+        note by note.
       </p>
     </div>
     <span>{exercises.length} exercises</span>
@@ -83,6 +87,8 @@
             {orientation}
             compact
             showLayerLabels={index === 0}
+            {showConcertStaff}
+            {showFingeringTab}
           />
         </article>
       {/each}

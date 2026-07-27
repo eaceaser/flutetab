@@ -404,6 +404,14 @@
               <option value="mouth-down">Mouth end down</option>
             </select>
           </label>
+          <label class="check-row">
+            <input type="checkbox" bind:checked={settings.showConcertStaff} />
+            <span>Standard treble clef staff</span>
+          </label>
+          <label class="check-row">
+            <input type="checkbox" bind:checked={settings.showFingeringTab} />
+            <span>Flute fingering tab staff</span>
+          </label>
         </div>
       </details>
       {:else if settings.view === 'practice'}
@@ -493,6 +501,14 @@
                 <option value="mouth-down">Mouth end down</option>
               </select>
             </label>
+            <label class="check-row">
+              <input type="checkbox" bind:checked={settings.showConcertStaff} />
+              <span>Standard treble clef staff</span>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" bind:checked={settings.showFingeringTab} />
+              <span>Flute fingering tab staff</span>
+            </label>
           </div>
         </details>
       {:else}
@@ -527,6 +543,8 @@
           {activeIndex}
           orientation={settings.orientation}
           showPrompts={settings.worksheetSections.includes('prompts')}
+          showConcertStaff={settings.showConcertStaff}
+          showFingeringTab={settings.showFingeringTab}
           onPlayExercise={playExercise}
         />
       </section>
@@ -561,19 +579,23 @@
           {notes}
           {activeIndex}
           orientation={settings.orientation}
+          showConcertStaff={settings.showConcertStaff}
+          showFingeringTab={settings.showFingeringTab}
         />
       </div>
 
-      <div class="bridge-note">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3v18M7 8l5-5 5 5M7 16l5 5 5-5" />
-        </svg>
-        <p>
-          <strong>Why two staves?</strong> Nakai notation keeps the flute root at written F♯ so
-          finger patterns transfer between flutes. Concert pitch shows what your {fluteName} flute
-          actually sounds.
-        </p>
-      </div>
+      {#if settings.showConcertStaff}
+        <div class="bridge-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v18M7 8l5-5 5 5M7 16l5 5 5-5" />
+          </svg>
+          <p>
+            <strong>Why two staves?</strong> Nakai notation keeps the flute root at written F♯ so
+            finger patterns transfer between flutes. Concert pitch shows what your {fluteName} flute
+            actually sounds.
+          </p>
+        </div>
+      {/if}
 
       <div class="note-section-heading">
         <div>

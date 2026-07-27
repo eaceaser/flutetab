@@ -9,9 +9,11 @@
     activeIndex = null,
     orientation = 'mouth-up',
     eyebrow = 'Unified score',
-    title = 'Concert, Nakai & fingering',
+    title,
     compact = false,
-    showLayerLabels = true
+    showLayerLabels = true,
+    showConcertStaff = true,
+    showFingeringTab = true
   }: {
     notes: ScaleNote[];
     activeIndex?: number | null;
@@ -20,6 +22,8 @@
     title?: string;
     compact?: boolean;
     showLayerLabels?: boolean;
+    showConcertStaff?: boolean;
+    showFingeringTab?: boolean;
   } = $props();
 
   let sheet: HTMLDivElement;
@@ -35,6 +39,24 @@
     Array.from({ length: Math.ceil(notes.length / notesPerSystem) }, (_, index) =>
       notes.slice(index * notesPerSystem, (index + 1) * notesPerSystem)
     )
+  );
+  let visibleLayers = $derived(
+    [
+      showConcertStaff ? 'concert pitch' : null,
+      'Nakai notation',
+      showFingeringTab ? 'fingering tablature' : null
+    ].filter((layer): layer is string => layer !== null)
+  );
+  let accessibleLayerLabel = $derived(visibleLayers.join(', '));
+  let displayTitle = $derived(
+    title ??
+      [
+        showConcertStaff ? 'Concert' : null,
+        'Nakai',
+        showFingeringTab ? 'fingering' : null
+      ]
+        .filter((layer): layer is string => layer !== null)
+        .join(', ')
   );
 
   function columnsFor(count: number): number[] {
@@ -56,33 +78,35 @@
   <div class="sheet-heading">
     <div>
       <span class="eyebrow">{eyebrow}</span>
-      <h3>{title}</h3>
+      <h3>{displayTitle}</h3>
     </div>
     <span class="alignment-note">Note-aligned</span>
   </div>
 
-  <div class="sheet-systems" role="group" aria-label="Concert pitch, Nakai notation, and fingering tablature">
+  <div class="sheet-systems" role="group" aria-label={accessibleLayerLabel}>
     {#each systems as system, systemIndex (`${systemIndex}-${system.map((note) => note.midi).join('-')}`)}
       {@const columns = columnsFor(system.length)}
       <section class="notation-system" aria-label={`Music system ${systemIndex + 1}`}>
-        {#if systemIndex === 0 && showLayerLabels}
-          <div class="layer-heading">
-            <h4>Concert pitch</h4>
-            <small>Sounding notes</small>
+        {#if showConcertStaff}
+          {#if systemIndex === 0 && showLayerLabels}
+            <div class="layer-heading">
+              <h4>Concert pitch</h4>
+              <small>Sounding notes</small>
+            </div>
+          {/if}
+          <div class="concert-layer">
+            <StaffSystem
+              notes={system}
+              mode="concert"
+              {activeIndex}
+              {width}
+              columnPositions={columns}
+              onPositions={() => {
+                alignedLayers[`concert-${systemIndex}`] = true;
+              }}
+            />
           </div>
         {/if}
-        <div class="concert-layer">
-          <StaffSystem
-            notes={system}
-            mode="concert"
-            {activeIndex}
-            {width}
-            columnPositions={columns}
-            onPositions={() => {
-              alignedLayers[`concert-${systemIndex}`] = true;
-            }}
-          />
-        </div>
 
         {#if systemIndex === 0 && showLayerLabels}
           <div class="layer-heading nakai-heading">
@@ -103,23 +127,26 @@
           />
         </div>
 
-        {#if systemIndex === 0 && showLayerLabels}
-          <div class="layer-heading fingering-heading">
-            <h4>Fingering tablature</h4>
-            <small>Mouth end shown by the tapered cap</small>
+        {#if showFingeringTab}
+          {#if systemIndex === 0 && showLayerLabels}
+            <div class="layer-heading fingering-heading">
+              <h4>Fingering tablature</h4>
+              <small>Mouth end shown by the tapered cap</small>
+            </div>
+          {/if}
+          <div
+            class="fingering-layer"
+            data-aligned={(!showConcertStaff ||
+              alignedLayers[`concert-${systemIndex}`] === true) &&
+            alignedLayers[`nakai-${systemIndex}`] === true}
+          >
+            {#each system as note, noteIndex}
+              <div class="fingering-position" style={`left: ${columns[noteIndex]}px`}>
+                <FingeringDiagram fingering={note.fingering} {orientation} size="small" />
+              </div>
+            {/each}
           </div>
         {/if}
-        <div
-          class="fingering-layer"
-          data-aligned={alignedLayers[`concert-${systemIndex}`] === true &&
-          alignedLayers[`nakai-${systemIndex}`] === true}
-        >
-          {#each system as note, noteIndex}
-            <div class="fingering-position" style={`left: ${columns[noteIndex]}px`}>
-              <FingeringDiagram fingering={note.fingering} {orientation} size="small" />
-            </div>
-          {/each}
-        </div>
       </section>
     {/each}
   </div>
@@ -127,7 +154,9 @@
   {#if !compact}
     <div class="sheet-note-names">
       <p><strong>Degrees</strong> {notes.map((note) => note.degreeLabel).join(' · ')}</p>
-      <p><strong>Concert</strong> {notes.map((note) => note.concertName).join(' · ')}</p>
+      {#if showConcertStaff}
+        <p><strong>Concert</strong> {notes.map((note) => note.concertName).join(' · ')}</p>
+      {/if}
       <p><strong>Nakai</strong> {notes.map((note) => note.nakaiName).join(' · ')}</p>
     </div>
   {/if}
